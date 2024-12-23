@@ -6,6 +6,8 @@
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License MIT">
 </p>
 
+## You can contribute Data like courses, difficulty, prerequisite,corequisite etc
+
 > A powerful and intuitive course planning tool designed specifically for IIT BS students to efficiently plan their academic journey.
 
 <p align="center">
