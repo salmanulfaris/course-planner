@@ -1,5 +1,5 @@
 # 📚 Course Planner App
-
+> [Demo](https://salmanulfaris.github.io/course-planner)
 <p align="center">
   <img src="https://img.shields.io/badge/vue-3.x-brightgreen.svg" alt="Vue 3.x">
   <img src="https://img.shields.io/badge/tailwindcss-3.x-blue.svg" alt="Tailwind CSS 3.x">

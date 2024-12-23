@@ -33,13 +33,15 @@
                 </div>
                 <div class="text-xs text-gray-500 mt-1">
                   <div class="flex items-center">
-                    Difficulty: 
-                    <div class="w-20 ml-2 bg-gray-200 h-2 rounded-full" >
-                      <div class=" w-20 h-2 rounded-full" :style="{ background: getDifficultyColor(course.difficulty),width:`${(course.difficulty/5)*100}%` }"></div>
+                    Difficulty:
+                    <div class="w-20 ml-2 bg-gray-200 h-2 rounded-full">
+                      <div class=" w-20 h-2 rounded-full"
+                        :style="{ background: getDifficultyColor(course.difficulty), width: `${(course.difficulty / 5) * 100}%` }">
+                      </div>
                     </div>
                     <span class="ml-1">{{ course.difficulty }}/5</span>
                   </div>
-                 
+
                 </div>
               </div>
               <button @click="addCourseToLastTerm(course)"
@@ -52,7 +54,7 @@
       </div>
 
       <!-- Main content area with timeline -->
-      <div class="flex-1 p-6 overflow-y-auto lg:max-h-screen">
+      <div class="flex-1 p-6 overflow-y-auto " id="main-container">
         <div class="bg-lime-100 border border-slate-900 rounded-lg  p-4 mb-6">
           <h2 class="text-xl font-bold mb-2 text-gray-800">Plan Summary</h2>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -73,14 +75,26 @@
               <p class="text-lg font-semibold">{{ totalMonths }}</p>
             </div>
           </div>
+          <div class="mt-4 flex justify-end space-x-2">
+            <button @click="exportAsImage"
+              class="bg-blue-500 border rounded-lg border-black text-white px-3 py-1 hover:bg-blue-600 transition-colors">
+              <BookDownIcon class="inline w-4" />
+              Export as Image
+            </button>
+            <button @click="exportAsPDF"
+              class="bg-green-500 border rounded-lg border-black text-white px-3 py-1 hover:bg-green-600 transition-colors">
+              <ImageDown class="inline w-4" />
+              Export as PDF
+            </button>
+          </div>
         </div>
-        <div class="flex border items-baseline flex-wrap  lg:relative gap-2  ">
-          <div v-for="(term, index) in terms" :key="index" class="bg-white rounded-lg p-4 lg:w-1/3 md:w-1/3">
+        <div class="flex items-baseline flex-wrap  lg:relative gap-2  ">
+          <div v-for="(term, index) in terms" :key="index" class="bg-white flex-1 rounded-lg basis-1/3 p-4">
             <div class="flex justify-between items-center mb-3">
               <div>
                 <h2 class="text-xl font-semibold text-gray-700">Term {{ index + 1 }}</h2>
                 <p class="text-sm text-gray-600">
-                  Avg. Difficulty: 
+                  Avg. Difficulty:
                   <span :style="{ color: getDifficultyColor(termAverageDifficulty(term)) }">
                     {{ termAverageDifficulty(term) }}
                   </span>
@@ -101,9 +115,15 @@
                     <p class="text-sm text-gray-600">Code: {{ course.course_id }}</p>
                     <p class="text-sm text-gray-600">Credits: {{ course.credit }}</p>
                     <div class="text-xs text-gray-500 mt-1">
-                      Difficulty: 
-                      <div class="inline-block w-16 h-2 rounded-full" :style="{ background: getDifficultyColor(course.difficulty) }"></div>
-                      <span class="ml-1">{{ course.difficulty }}/5</span>
+                      <div class="flex items-center">
+                        Difficulty:
+                        <div class="w-20 ml-2 bg-gray-200 h-1 rounded-full">
+                          <div class=" w-20 h-1 rounded-full"
+                            :style="{ background: getDifficultyColor(course.difficulty), width: `${(course.difficulty / 5) * 100}%` }">
+                          </div>
+                        </div>
+                        <span class="ml-1">{{ course.difficulty }}/5</span>
+                      </div>
                     </div>
                   </div>
                   <button @click="removeCourse(index, course)" class="text-red-500 hover:text-red-700">
@@ -140,14 +160,16 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { XIcon, PlusIcon, TrashIcon, GithubIcon } from 'lucide-vue-next'
+import { XIcon, PlusIcon, TrashIcon, GithubIcon, BookDownIcon, ImageDown } from 'lucide-vue-next'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 import iitCourses from './data/courses';
 
 // Updated course data with level_id
 const courses = iitCourses
 
 const terms = ref([{ courses: [] }])
-const availableCourses = ref([...courses])
+
 const searchQuery = ref('')
 
 const showToast = ref(false)
@@ -185,14 +207,18 @@ const totalMonths = computed(() => {
   return terms.value.length * 4
 })
 
+const availableCourses = computed(() => {
+  return courses.filter(course => !terms.value.some(term => term.courses.some(c => c.course_id === course.course_id)))
+})
+
 const canAddNewTerm = computed(() => {
   return terms.value.every(term => term.courses.length > 0)
 })
 
 function termCredits(term) {
   const credits = term.courses.reduce((total, course) => total + course.credit, 0);
-  const avgDifficulty = termAverageDifficulty(term);
-  return `${credits} (Avg. Difficulty: ${avgDifficulty})`;
+
+  return `${credits}`;
 }
 
 function addTerm() {
@@ -202,14 +228,12 @@ function addTerm() {
 }
 
 function removeTerm(index) {
-  if (terms.value.length > 1) {
+  if (terms.value.length > 1 && confirm("Are you sure you want to remove this term? All other term after this will be removed.")) {
     var removedCourses = []
     terms.value.slice(index, terms.value.length).forEach(term => {
       removedCourses = removedCourses.concat(term.courses)
     })
-    console.log(removedCourses);
-    
-    availableCourses.value.push(...removedCourses)
+
     terms.value.splice(index, 10)
   }
 }
@@ -255,7 +279,7 @@ function addCourseToTerm(course, termIndex) {
   }
 
   term.courses.push(course)
-  availableCourses.value = availableCourses.value.filter(c => c.course_id !== course.course_id)
+
 
   theory = term.courses.filter(c => c.course_type === 'theory')
 
@@ -300,7 +324,7 @@ function validateLevel(course, termIndex) {
 function removeCourse(termIndex, course) {
   const term = terms.value[termIndex]
   term.courses = term.courses.filter(c => c.course_id !== course.course_id)
-  availableCourses.value.push(course)
+  // availableCourses.value.push(course)
 
   // Remove courses that have the deleted course as a corequisite
   terms.value.forEach(t => {
@@ -331,6 +355,29 @@ function termAverageDifficulty(term) {
   const totalDifficulty = term.courses.reduce((sum, course) => sum + course.difficulty, 0);
   return (totalDifficulty / term.courses.length).toFixed(1);
 }
+
+// New export functions
+function exportAsImage() {
+  html2canvas(document.querySelector("#main-container")).then(canvas => {
+    const link = document.createElement('a')
+    link.download = 'course-plan.png'
+    link.href = canvas.toDataURL()
+    link.click()
+  })
+}
+
+function exportAsPDF() {
+  html2canvas(document.querySelector("#main-container")).then(canvas => {
+    const imgData = canvas.toDataURL('image/png')
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'px',
+      format: [canvas.width, canvas.height]
+    })
+    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
+    pdf.save("course-plan.pdf")
+  })
+}
 </script>
 
 <style scoped>
@@ -344,4 +391,3 @@ function termAverageDifficulty(term) {
   opacity: 0;
 }
 </style>
-
