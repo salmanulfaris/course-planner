@@ -273,6 +273,13 @@ function addCourseToTerm(course, termIndex) {
     return
   }
 
+
+  if (!validatePrerequisites(course, termIndex)) {
+    showError('Prequisites not met for this course.')
+    return
+  }
+  
+
   if (!validateLevel(course, termIndex)) {
     showError('Course level not allowed. Complete all lower level courses first.')
     return
