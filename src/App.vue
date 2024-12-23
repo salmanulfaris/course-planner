@@ -31,6 +31,16 @@
                 <div v-if="course.corequisites.length" class="text-xs text-gray-500 mt-1">
                   Co-req: {{ course.corequisites.join(', ') }}
                 </div>
+                <div class="text-xs text-gray-500 mt-1">
+                  <div class="flex items-center">
+                    Difficulty: 
+                    <div class="w-20 ml-2 bg-gray-200 h-2 rounded-full" >
+                      <div class=" w-20 h-2 rounded-full" :style="{ background: getDifficultyColor(course.difficulty),width:`${(course.difficulty/5)*100}%` }"></div>
+                    </div>
+                    <span class="ml-1">{{ course.difficulty }}/5</span>
+                  </div>
+                 
+                </div>
               </div>
               <button @click="addCourseToLastTerm(course)"
                 class="bg-red-400 border border-black text-white rounded-full w-6 h-6 flex shrink-0 items-center justify-center shadow-sm hover:rotate-90 transition-all hover:bg-blue-500 ease-in-out duration-200">
@@ -64,20 +74,24 @@
             </div>
           </div>
         </div>
-        <!-- <div class="absolute top-0 bottom-0 left-8 border-l-2 border-dotted border-gray-300 -z-8"></div> -->
         <div class="flex border items-baseline flex-wrap  lg:relative gap-2  ">
-          <!-- Dotted line connecting terms -->
-
           <div v-for="(term, index) in terms" :key="index" class="bg-white rounded-lg p-4 lg:w-1/3 md:w-1/3">
             <div class="flex justify-between items-center mb-3">
-              <h2 class="text-xl font-semibold text-gray-700">Term {{ index + 1 }}</h2>
+              <div>
+                <h2 class="text-xl font-semibold text-gray-700">Term {{ index + 1 }}</h2>
+                <p class="text-sm text-gray-600">
+                  Avg. Difficulty: 
+                  <span :style="{ color: getDifficultyColor(termAverageDifficulty(term)) }">
+                    {{ termAverageDifficulty(term) }}
+                  </span>
+                </p>
+              </div>
               <button @click="removeTerm(index)" class="text-red-500 hover:text-red-700" :disabled="terms.length === 1">
                 <TrashIcon class="h-5 w-5" />
               </button>
             </div>
             <div class="min-h-[200px] bg-gray-50 rounded p-2 space-y-2" @dragover.prevent
               @drop="dropCourse($event, index)">
-
               <div v-for="course in term.courses" :key="course.course_id"
                 :class="{ 'bg-green-100': course.course_type === 'theory', 'bg-blue-100': course.course_type === 'project' }"
                 class=" p-2 rounded border border-dashed border-black ">
@@ -86,6 +100,11 @@
                     <h3 class="font-semibold text-gray-700">{{ course.name }}</h3>
                     <p class="text-sm text-gray-600">Code: {{ course.course_id }}</p>
                     <p class="text-sm text-gray-600">Credits: {{ course.credit }}</p>
+                    <div class="text-xs text-gray-500 mt-1">
+                      Difficulty: 
+                      <div class="inline-block w-16 h-2 rounded-full" :style="{ background: getDifficultyColor(course.difficulty) }"></div>
+                      <span class="ml-1">{{ course.difficulty }}/5</span>
+                    </div>
                   </div>
                   <button @click="removeCourse(index, course)" class="text-red-500 hover:text-red-700">
                     <XIcon class="h-5 w-5" />
@@ -95,9 +114,6 @@
               <div v-if="term.courses.length == 0" class="text-center text-gray-400 mt-10">
                 Drag Courses from left side
               </div>
-
-
-
             </div>
             <p class="mt-3 text-sm font-semibold text-gray-600">
               Total Credits: {{ termCredits(term) }}
@@ -151,8 +167,18 @@ const totalCredits = computed(() => {
 })
 
 const highestLevel = computed(() => {
-  const levels = terms.value.flatMap(term => term.courses.map(course => course.level))
-  return levels.length ? levels.reduce((a, b) => a > b ? a : b) : 'N/A'
+  let max_level = 0
+  let max_level_name = ''
+  terms.value.forEach(term => {
+    term.courses.forEach(course => {
+      if (course.level_id > max_level) {
+        max_level = course.level_id
+        max_level_name = course.level
+      }
+    })
+  })
+  return `${max_level_name}`
+
 })
 
 const totalMonths = computed(() => {
@@ -164,7 +190,9 @@ const canAddNewTerm = computed(() => {
 })
 
 function termCredits(term) {
-  return term.courses.reduce((total, course) => total + course.credit, 0)
+  const credits = term.courses.reduce((total, course) => total + course.credit, 0);
+  const avgDifficulty = termAverageDifficulty(term);
+  return `${credits} (Avg. Difficulty: ${avgDifficulty})`;
 }
 
 function addTerm() {
@@ -203,11 +231,11 @@ function addCourseToLastTerm(course) {
 function addCourseToTerm(course, termIndex) {
   const term = terms.value[termIndex]
   // Filter theory only
-  let thoery = term.courses.filter(c => c.course_type === 'theory')
+  let theory = term.courses.filter(c => c.course_type === 'theory')
   // Filter project course
   let project = term.courses.filter(c => c.course_type === 'project')
 
-  if (course.course_type === 'theory' && thoery.length >= 4) {
+  if (course.course_type === 'theory' && theory.length >= 4) {
     showError('A term can have at most 4 theory courses.')
     return
   }
@@ -215,8 +243,6 @@ function addCourseToTerm(course, termIndex) {
     showError('A term can have at most 2 project courses.')
     return
   }
-
-
 
   if (!validateCorequisites(course, termIndex)) {
     showError('Corequisites not met for this course.')
@@ -231,14 +257,11 @@ function addCourseToTerm(course, termIndex) {
   term.courses.push(course)
   availableCourses.value = availableCourses.value.filter(c => c.course_id !== course.course_id)
 
-  thoery = term.courses.filter(c => c.course_type === 'theory')
+  theory = term.courses.filter(c => c.course_type === 'theory')
 
-
-  if (thoery.length == 4) {
+  if (theory.length == 4) {
     addTerm()
   }
-
-
 }
 
 function validatePrerequisites(course, termIndex) {
@@ -262,7 +285,6 @@ function validateLevel(course, termIndex) {
 
   const restCourses = new Set(allCourses.map(c => c.level_id))
 
-
   for (let i = 1; i < course.level_id; i++) {
     if (restCourses.has(i)) {
       return false
@@ -273,9 +295,6 @@ function validateLevel(course, termIndex) {
   } else {
     return term.courses[0].level_id === course.level_id
   }
-
-
-
 }
 
 function removeCourse(termIndex, course) {
@@ -296,9 +315,23 @@ function showError(message) {
     showToast.value = false
   }, 3000)
 }
+
+function getDifficultyColor(difficulty) {
+  const green = [76, 175, 80];  // #4CAF50
+  const red = [255, 87, 34];    // #FF5722
+  const t = (difficulty - 1) / 4;  // Normalize difficulty to 0-1 range
+  const r = Math.round(green[0] * (1 - t) + red[0] * t);
+  const g = Math.round(green[1] * (1 - t) + red[1] * t);
+  const b = Math.round(green[2] * (1 - t) + red[2] * t);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function termAverageDifficulty(term) {
+  if (term.courses.length === 0) return 0;
+  const totalDifficulty = term.courses.reduce((sum, course) => sum + course.difficulty, 0);
+  return (totalDifficulty / term.courses.length).toFixed(1);
+}
 </script>
-
-
 
 <style scoped>
 .fade-enter-active,
@@ -311,3 +344,4 @@ function showError(message) {
   opacity: 0;
 }
 </style>
+
