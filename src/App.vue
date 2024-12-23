@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-pink-100 flex flex-col">
     <header class="bg-white border-b border-black p-4 flex justify-between items-center">
       <h1 class="text-2xl font-bold text-gray-800">Course Planner</h1>
-      <a href="https://github.com/yourusername/course-planner" target="_blank" rel="noopener noreferrer"
+      <a href="https://github.com/salmanulfaris/course-planner" target="_blank" rel="noopener noreferrer"
         class="text-gray-600 hover:text-gray-900">
         <GithubIcon class="h-6 w-6" />
       </a>
