@@ -175,9 +175,14 @@ function addTerm() {
 
 function removeTerm(index) {
   if (terms.value.length > 1) {
-    const removedCourses = terms.value[index].courses
+    var removedCourses = []
+    terms.value.slice(index, terms.value.length).forEach(term => {
+      removedCourses = removedCourses.concat(term.courses)
+    })
+    console.log(removedCourses);
+    
     availableCourses.value.push(...removedCourses)
-    terms.value.splice(index, 1)
+    terms.value.splice(index, 10)
   }
 }
 
@@ -280,7 +285,7 @@ function removeCourse(termIndex, course) {
 
   // Remove courses that have the deleted course as a corequisite
   terms.value.forEach(t => {
-    t.courses = t.courses.filter(c => !c.corequisites.includes(course.course_id))
+    t.courses = t.courses.filter(c => !c.corequisites.includes(course.course_id) && !c.prerequisites.includes(course.course_id))
   })
 }
 
