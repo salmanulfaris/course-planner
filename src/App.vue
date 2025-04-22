@@ -1,5 +1,8 @@
 <template>
   <div class="min-h-screen bg-pink-100 flex flex-col">
+    <div v-if="isSmallScreen" class="fixed top-4 left-4 bg-yellow-300 text-black px-4 py-2 rounded shadow-lg z-50">
+      Please open in desktop for full features.
+    </div>
     <header class="bg-white border-b border-black p-4 flex justify-between items-center">
       <h1 class="text-2xl font-bold text-gray-800">Course Planner</h1>
       <a href="https://github.com/salmanulfaris/course-planner" target="_blank" rel="noopener noreferrer"
@@ -385,6 +388,23 @@ function exportAsPDF() {
     pdf.save("course-plan.pdf")
   })
 }
+
+import { ref, onMounted, onUnmounted } from 'vue'
+
+const isSmallScreen = ref(false)
+
+function checkScreenSize() {
+  isSmallScreen.value = window.innerWidth < 768 // Adjust breakpoint as needed
+}
+
+onMounted(() => {
+  checkScreenSize()
+  window.addEventListener('resize', checkScreenSize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkScreenSize)
+})
 </script>
 
 <style scoped>
@@ -397,4 +417,17 @@ function exportAsPDF() {
 .fade-leave-to {
   opacity: 0;
 }
+
+.tooltip {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  background-color: #fbbf24; /* Yellow */
+  color: #000;
+  padding: 8px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+}
+
 </style>
